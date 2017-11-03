@@ -1,0 +1,5 @@
+ofxAnimatable
+ofxBullet
+ofxFX
+ofxOsc
+ofxPostProcessing
