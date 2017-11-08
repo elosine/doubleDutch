@@ -15,28 +15,24 @@ void ofApp::setup(){
     
     
     world.setup();
+    world.setGravity(ofVec3f(0,-50, 0));
     world.setCamera(&cam);
     
-    ground = new ofxBulletBox();
-    ground->create( world.world, ofVec3f(0., -ofGetHeight()/2, 0.), 0., 2000., 50.f, 2000.f );
-    ground->setProperties(.25, .95);
-    ground->add();
-    
     ceiling = new ofxBulletBox();
-    ceiling->create( world.world, ofVec3f(0., ofGetHeight()/2, 0.), 0., 2000., 50.f, 2000.f );
+    ceiling->create( world.world, ofVec3f(0., (ofGetHeight()/2)-200, 0.), 0., 2000., 50.f, 2000.f );
     ceiling->setProperties(.25, .95);
     ceiling->add();
-    
+
     lWall = new ofxBulletBox();
-    lWall->create( world.world, ofVec3f(-ofGetWidth()/2, 0., 0.), 0., 50.f, 2000.f, 2000.f );
+    lWall->create( world.world, ofVec3f((-ofGetWidth()/2)-5, 0., 0.), 0., 50.f, 2000.f, 2000.f );
     lWall->setProperties(.25, .95);
     lWall->add();
     
     rWall = new ofxBulletBox();
-    rWall->create( world.world, ofVec3f(ofGetWidth()/2, 0., 0.), 0., 50.f, 2000.f, 2000.f );
+    rWall->create( world.world, ofVec3f((ofGetWidth()/2)+5, 0., 0.), 0., 50.f, 2000.f, 2000.f );
     rWall->setProperties(.25, .95);
     rWall->add();
-    
+
     back = new ofxBulletBox();
     back->create( world.world, ofVec3f(0., 0., -ofGetHeight()/2), 0., 2000.f, 2000.f, 50.f );
     back->setProperties(.25, .95);
@@ -46,31 +42,13 @@ void ofApp::setup(){
     front->create( world.world, ofVec3f(0., 0., ofGetHeight()/2), 0., 2000.f, 2000.f, 50.f );
     front->setProperties(.25, .95);
     front->add();
+
+    ground = new ofxBulletBox();
+    ground->create( world.world, ofVec3f(0., (-ofGetHeight()/2)+200, 0.), 0., 2000., 50.f, 2000.f );
+    ground->setProperties(.25, .95);
+    ground->add();
     
-    
-    
-//    ground = new ofxBulletBox();
-//    ground->create( world.world, ofVec3f(0., -200, 0.), 0., 2000., 50.f, 2000.f );
-//    ground->setProperties(.25, .95);
-//    ground->add();
-//    
-//    ceiling = new ofxBulletBox();
-//    ceiling->create( world.world, ofVec3f(0., 200, 0.), 0., 2000., 50.f, 2000.f );
-//    ceiling->setProperties(.25, .95);
-//    ceiling->add();
-//    
-//    lWall = new ofxBulletBox();
-//    lWall->create( world.world, ofVec3f(-200, 0., 0.), 0., 50.f, 2000.f, 2000.f );
-//    lWall->setProperties(.25, .95);
-//    lWall->add();
-//    
-//    rWall = new ofxBulletBox();
-//    rWall->create( world.world, ofVec3f(200, 0., 0.), 0., 50.f, 2000.f, 2000.f );
-//    rWall->setProperties(.25, .95);
-//    rWall->add();
-    
-    
-  
+      
 
     for(int i=0; i<numRopes; i++){
         zs[i] = ofRandom(-150, 150);
@@ -80,7 +58,7 @@ void ofApp::setup(){
         ropes.push_back( new ofxBulletRope() );
         ((ofxBulletRope*)ropes[i])->create( &world, nodeA, nodeZ, numNodes );
         ropes[i]->add();
-        ropes[i]->setMass(1.0f);
+        ropes[i]->setMass(10.4f);
         ropes[i]->setStiffness(1, 1, 1);
         ropes[i]->setFixedAt(0);
         ropes[i]->setFixedAt(numNodes+1);
@@ -199,6 +177,16 @@ void ofApp::update(){
         if(m.getAddress() == "/chgClr"){
             chgClr(m.getArgAsInt(0), m.getArgAsString(1));
         }
+        
+        if(m.getAddress() == "/chgRopeMode"){
+            chgRopeMode(m.getArgAsInt(0));
+        }
+        
+        if(m.getAddress() == "/catPushDir"){
+            catPushDir = m.getArgAsInt(0);
+            cout<<"yea baby"   <<endl;
+        }
+        
     }
     
     world.update();
@@ -208,9 +196,8 @@ void ofApp::update(){
 //    xPos = xOrig + radius * cos(angle);
 //    yPos = yOrig + radius * sin(angle);
     
-    pitchDetect(0, 84, 86);
     
-//    pitchDetect(0, 72, 73);
+    pitchDetect(0, 72, 73);
     pitchDetect(1, 74, 75);
     pitchDetect(2, 70, 71);
     pitchDetect(3, 57, 58);
@@ -263,13 +250,11 @@ void ofApp::draw(){
     // begin scene to post process
     post.begin(cam);
     
-    
-    ofSetColor(100, 100, 100);
-    ground->draw();
-    ceiling->draw();
-    lWall->draw();
-    rWall->draw();
-
+//    ofSetColor(50, 50, 50);
+//    ceiling->draw();
+//    lWall->draw();
+//    rWall->draw();
+//    ground->draw();
 
 
     for(int i=0;i<ropes.size();++i){
@@ -300,19 +285,54 @@ void ofApp::draw(){
 }
 
 void ofApp::pitchDetect(int i, float pitchL, float pitchH){
-    float ampC = ofClamp(amp, -30, -10);
-    float nypos = ofMap(ampC, -30, -10, -nyRange, nyRange);
-    ofVec3f cpA = ropes[i]->getNodePos(0);
-    ofVec3f cpZ = ropes[i]->getNodePos(numNodes+1);
+//    int d2[2] = {-1, 1};
+//    int trn = floor( ofRandom(2) );
+//    int tdir = d2[trn];
 
-    if(freq > pitchL && freq < pitchH){
-        nypos = ofClamp(nypos, -nyRange, nyRange);
-        ropes[i]->setNodePositionAt(0,  ofVec3f(cpA.x, nypos, cpA.z) );
-        ropes[i]->setNodePositionAt( (numNodes+1), ofVec3f(cpZ.x, -nypos, cpZ.z) );
-    }
-    else{
-//        ropes[i]->setNodePositionAt(0,  ofVec3f(-ofGetWidth()/2, ys[i], zs[i]) );
-//        ropes[i]->setNodePositionAt( (numNodes+1),  ofVec3f(ofGetWidth()/2, ys[i], zs[i]) );
+    switch(ropeMode){
+
+        case 0:
+            if(freq > pitchL && freq < pitchH){
+                ropes[i]->addForce( btVector3(0., 30000., 15000), 15);
+            }
+            break;
+            
+        case 2:
+            if(freq > pitchL && freq < pitchH){
+                int tnd = round(ofRandom(0, (numNodes+1)));
+//                int tForce = ofRandom(800, 1000);
+                int tForce = ofRandom(2800, 2000);
+
+                
+                switch(catPushDir){
+                    case 0:
+                        ropes[i]->addForce( btVector3(0., tForce, 0), tnd);
+                        break;
+                        
+                    case 1:
+                        ropes[i]->addForce( btVector3(tForce, 0, 0), tnd);
+                        break;
+                        
+                    case 2:
+                        ropes[i]->addForce( btVector3(-tForce, 0, 0), tnd);
+                        break;
+                        
+                    case 3:
+                        ropes[i]->addForce( btVector3(0, 0, tForce), tnd);
+                        break;
+                        
+                    case 4:
+                        ropes[i]->addForce( btVector3(0, 0, -tForce), tnd);
+                        break;
+                        
+                    case 5:
+                        ropes[i]->addForce( btVector3(0, -tForce, 0), tnd);
+                        break;
+                        
+                }
+                
+            }
+            break;
     }
 }
 
@@ -320,7 +340,38 @@ void ofApp::chgClr(int ropeNum, string palette){
     activeClrs[ropeNum] = palettes[palette][ropeNum];
 }
 
-
+void ofApp::chgRopeMode(int modeNum){
+    
+    switch(modeNum){
+            
+        case 0:
+            for(int i=0;i<ropes.size();i++){
+                ropes[i]->setNodePositionAt(0, ofVec3f(-ofGetWidth()/2, ys[i], zs[i]));
+                ropes[i]->setNodePositionAt( (numNodes+1),  ofVec3f(ofGetWidth()/2, ys[i], zs[i]) );
+                
+                ropes[i]->setFixedAt(0);
+                ropes[i]->setFixedAt(numNodes+1);
+                
+                world.setGravity(ofVec3f(0,-50, 0));
+                
+                ropeMode = 0;
+            }
+            break;
+            
+        case 2:
+            for(int i=0;i<ropes.size();i++){
+                ropes[i]->setNodeMass(0, 10.4f);
+                ropes[i]->setNodeMass(numNodes+1, 10.4f);
+                
+                world.setGravity(ofVec3f(0,0, 0));
+                
+                ropeMode = 2;
+            }
+            break;
+    }
+   
+    
+}
 
 void ofApp::keyPressed(int key){
    
@@ -328,11 +379,6 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
-    
-    for(int i=0;i<ropes.size();i++){
-    ropes[i]->setNodeMass(0, 1.0f);
-    ropes[i]->setNodeMass(numNodes+1, 1.0f);
-    }
     
     
 }

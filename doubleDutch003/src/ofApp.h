@@ -23,6 +23,7 @@ public:
     
     void pitchDetect(int i, float pitchL, float pitchH);
     void chgClr(int idx, string palette);
+    void chgRopeMode(int modeNum);
     
 
     
@@ -66,9 +67,7 @@ public:
     
     int vSizeL = 5;
     int vSizeH = 50;
-    
-    int nyRange = 50;
-    
+        
     vector<int> pNodes;
     
     map< string, std::array<ofColor, 9> > palettes;
@@ -84,6 +83,8 @@ public:
     ofxBulletBox*				rWall;
     ofxBulletBox*				back;
     ofxBulletBox*				front;
+    
+    int catPushDir = 0;
     
 
 };
