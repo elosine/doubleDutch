@@ -1,0 +1,4 @@
+ofxBullet
+ofxFX
+ofxOsc
+ofxPostProcessing
